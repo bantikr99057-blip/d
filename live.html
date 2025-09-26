@@ -1,24 +1,23 @@
 <!doctype html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Live: IND vs SL — Live Player</title>
+  <title>Live Match — Bunty yadav</title>
 
   <!-- Hls.js -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.11/dist/hls.min.js"></script>
 
   <style>
-    body{margin:0;background:#000;color:#fff;font-family:sans-serif;overflow-x:hidden}
-    .container{max-width:1100px;margin:20px auto;padding:12px}
-    video{width:100%;height:60vh;max-height:720px;background:#000;display:block}
-    .controls{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
-    .btn{background:#25D366;color:#000;padding:10px 18px;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
-    .btn.ghost{background:transparent;color:#ccc;border:1px solid #444}
-    /* Floating WhatsApp Button */
-    .wa-fab{position:fixed;right:16px;bottom:16px;background:#25D366;color:#000;padding:12px 16px;border-radius:999px;font-weight:700;box-shadow:0 8px 24px rgba(37,211,102,0.4);z-index:1000;display:flex;align-items:center;gap:8px;cursor:pointer;border:none}
-    .wa-fab img{width:20px;height:20px}
-    /* Center WhatsApp modal */
+    body{margin:0;background:#000;color:#fff;font-family:sans-serif;text-align:center}
+    header{padding:12px;font-size:18px;font-weight:bold;background:#111}
+    video{width:100%;height:65vh;max-height:720px;background:#000}
+    .lang-select{margin:12px auto;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+    .btn{padding:8px 14px;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
+    .btn.active{background:#25D366;color:#000}
+    .btn:not(.active){background:#222;color:#fff}
+
+    /* WhatsApp Modal */
     .wa-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:2000}
     .wa-card{background:linear-gradient(135deg,#075e54,#128c7e);color:#fff;padding:24px;border-radius:16px;text-align:center;max-width:320px;box-shadow:0 8px 28px rgba(0,0,0,0.5)}
     .wa-card img{width:50px;height:50px;margin-bottom:12px;filter:invert(1)}
@@ -26,6 +25,10 @@
     .wa-card p{font-size:14px;margin:0 0 14px}
     .wa-actions{display:flex;flex-direction:column;gap:8px}
     .wa-close{background:transparent;color:#fff;font-size:14px;text-decoration:underline;border:none;cursor:pointer}
+
+    /* Floating WA Button */
+    .wa-fab{position:fixed;right:16px;bottom:16px;background:#25D366;color:#000;padding:12px 16px;border-radius:999px;font-weight:700;box-shadow:0 8px 24px rgba(37,211,102,0.4);z-index:1000;display:flex;align-items:center;gap:8px;cursor:pointer;border:none}
+    .wa-fab img{width:20px;height:20px}
   </style>
 </head>
 <body>
@@ -43,16 +46,16 @@
     </div>
   </div>
 
-  <div class="container">
-    <h1>LIVE — IND vs SL</h1>
-    <video id="liveVideo" controls playsinline webkit-playsinline>
-      <source id="sourceTag" src="https://dai.google.com/ssai/event/yk9L2U37Sgilimx_SKGHhw/master.m3u8">
-    </video>
-    <div class="controls">
-      <span>Live Stream</span>
-      <button id="pipBtn" class="btn ghost">Picture-in-Picture</button>
-    </div>
+  <header>LIVE MATCH — Bunty yadav</header>
+
+  <div class="lang-select">
+    <button class="btn active" data-src="https://dai.google.com/ssai/event/cgIuKDU4SfGzYFid65t3fg/master.m3u8">Tamil</button>
+    <button class="btn" data-src="https://dai.google.com/ssai/event/yk9L2U37Sgilimx_SKGHhw/master.m3u8">Hindi</button>
+    <button class="btn" data-src="https://dai.google.com/ssai/event/WuMNGfdPRoW2_F3QZUXNRw/master.m3u8">English</button>
+    <button class="btn" data-src="https://dai.google.com/ssai/event/1jne4j1lSJeB2tX-a-2TEA/master.m3u8">Telugu</button>
   </div>
+
+  <video id="liveVideo" controls playsinline webkit-playsinline></video>
 
   <!-- Floating WA Button -->
   <button id="waFab" class="wa-fab">
@@ -62,7 +65,7 @@
 
 <script>
   const video=document.getElementById('liveVideo');
-  const hlsSource=document.getElementById('sourceTag').src;
+  const buttons=document.querySelectorAll('.lang-select .btn');
   const pipBtn=document.getElementById('pipBtn');
   const waModal=document.getElementById('waModal');
   const waHide=document.getElementById('waHide');
@@ -72,30 +75,36 @@
   const WA_URL="https://whatsapp.com/channel/0029VbAvIUo2ZjCu4eWjOw1T/103";
   waJoin.href=WA_URL;
 
-  // show modal only if not hidden
+  // show modal once
   const WA_KEY="wa_modal_hidden";
   if(!localStorage.getItem(WA_KEY)){waModal.style.display="flex";}
 
   waHide.onclick=()=>{waModal.style.display="none";localStorage.setItem(WA_KEY,"1");};
   waFab.onclick=()=>{window.open(WA_URL,"_blank");};
 
-  // HLS playback
-  if(Hls.isSupported()){
-    const hls=new Hls();
-    hls.loadSource(hlsSource);
-    hls.attachMedia(video);
-  } else if(video.canPlayType('application/vnd.apple.mpegurl')){
-    video.src=hlsSource;
+  // init HLS player
+  let hls;
+  function loadStream(src){
+    if(hls){hls.destroy();}
+    if(Hls.isSupported()){
+      hls=new Hls();
+      hls.loadSource(src);
+      hls.attachMedia(video);
+    } else if(video.canPlayType('application/vnd.apple.mpegurl')){
+      video.src=src;
+    }
   }
 
-  // PiP
-  pipBtn.onclick=async()=>{
-    if(document.pictureInPictureElement){
-      await document.exitPictureInPicture();
-    } else {
-      await video.requestPictureInPicture();
-    }
-  };
+  // set first default (Tamil)
+  loadStream(buttons[0].dataset.src);
+
+  buttons.forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      buttons.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      loadStream(btn.dataset.src);
+    });
+  });
 </script>
 
 </body>
