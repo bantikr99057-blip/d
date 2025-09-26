@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Live: IND vs SL — Live Player</title>
+
+  <!-- Hls.js -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.11/dist/hls.min.js"></script>
+
+  <style>
+    body{margin:0;background:#000;color:#fff;font-family:sans-serif;overflow-x:hidden}
+    .container{max-width:1100px;margin:20px auto;padding:12px}
+    video{width:100%;height:60vh;max-height:720px;background:#000;display:block}
+    .controls{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
+    .btn{background:#25D366;color:#000;padding:10px 18px;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
+    .btn.ghost{background:transparent;color:#ccc;border:1px solid #444}
+    /* Floating WhatsApp Button */
+    .wa-fab{position:fixed;right:16px;bottom:16px;background:#25D366;color:#000;padding:12px 16px;border-radius:999px;font-weight:700;box-shadow:0 8px 24px rgba(37,211,102,0.4);z-index:1000;display:flex;align-items:center;gap:8px;cursor:pointer;border:none}
+    .wa-fab img{width:20px;height:20px}
+    /* Center WhatsApp modal */
+    .wa-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:2000}
+    .wa-card{background:linear-gradient(135deg,#075e54,#128c7e);color:#fff;padding:24px;border-radius:16px;text-align:center;max-width:320px;box-shadow:0 8px 28px rgba(0,0,0,0.5)}
+    .wa-card img{width:50px;height:50px;margin-bottom:12px;filter:invert(1)}
+    .wa-card h2{margin:0 0 8px;font-size:20px}
+    .wa-card p{font-size:14px;margin:0 0 14px}
+    .wa-actions{display:flex;flex-direction:column;gap:8px}
+    .wa-close{background:transparent;color:#fff;font-size:14px;text-decoration:underline;border:none;cursor:pointer}
+  </style>
+</head>
+<body>
+
+  <!-- WhatsApp Modal -->
+  <div id="waModal" class="wa-modal" style="display:none;">
+    <div class="wa-card">
+      <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg" alt="WA" />
+      <h2>Join WhatsApp Channel</h2>
+      <p>Match links & updates directly on WhatsApp.</p>
+      <div class="wa-actions">
+        <a class="btn" id="waJoin" target="_blank" rel="noopener">Join Now</a>
+        <button id="waHide" class="wa-close">Skip</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1>LIVE — IND vs SL</h1>
+    <video id="liveVideo" controls playsinline webkit-playsinline>
+      <source id="sourceTag" src="https://liveakdai-p.slivcdn.com/hls/live/2119921/cricacc12609/HIN/std_lrh-800300010.m3u8?hdnea=exp=1758930005~acl=/*~id=6635f858fb3e496b92e7050475b7b5fb-1758886770987~hmac=b067339f305b4a3ebe81923ddc069acb384d2c4f1afa08ae087fe86f9ee60409" type="application/x-mpegURL">
+    </video>
+    <div class="controls">
+      <span>Live Stream</span>
+      <button id="pipBtn" class="btn ghost">Picture-in-Picture</button>
+    </div>
+  </div>
+
+  <!-- Floating WA Button -->
+  <button id="waFab" class="wa-fab">
+    <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg" alt="WA">
+    Join
+  </button>
+
+<script>
+  const video=document.getElementById('liveVideo');
+  const hlsSource=document.getElementById('sourceTag').src;
+  const pipBtn=document.getElementById('pipBtn');
+  const waModal=document.getElementById('waModal');
+  const waHide=document.getElementById('waHide');
+  const waFab=document.getElementById('waFab');
+  const waJoin=document.getElementById('waJoin');
+
+  const WA_URL="https://whatsapp.com/channel/0029VbAvIUo2ZjCu4eWjOw1T/103";
+  waJoin.href=WA_URL;
+
+  // show modal only if not hidden
+  const WA_KEY="wa_modal_hidden";
+  if(!localStorage.getItem(WA_KEY)){waModal.style.display="flex";}
+
+  waHide.onclick=()=>{waModal.style.display="none";localStorage.setItem(WA_KEY,"1");};
+  waFab.onclick=()=>{window.open(WA_URL,"_blank");};
+
+  // HLS playback
+  if(Hls.isSupported()){
+    const hls=new Hls();
+    hls.loadSource(hlsSource);
+    hls.attachMedia(video);
+  } else if(video.canPlayType('application/vnd.apple.mpegurl')){
+    video.src=hlsSource;
+  }
+
+  // PiP
+  pipBtn.onclick=async()=>{
+    if(document.pictureInPictureElement){
+      await document.exitPictureInPicture();
+    } else {
+      await video.requestPictureInPicture();
+    }
+  };
+</script>
+
+</body>
+</html>
